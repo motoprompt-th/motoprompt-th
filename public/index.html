@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MotoPrompt TH</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #ff4d00;
+    --accent2: #ff8c00;
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --success: #00d26a;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  header h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .version-tag {
+    margin-left: auto;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* Main layout */
+  .main {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: calc(100vh - 65px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    max-height: calc(100vh - 65px);
+    position: sticky;
+    top: 65px;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  /* Image Upload */
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .upload-area:hover, .upload-area.dragover {
+    border-color: var(--accent);
+    background: rgba(255,77,0,0.04);
+  }
+
+  .upload-area.has-image {
+    border-style: solid;
+    border-color: var(--accent);
+    padding: 8px;
+  }
+
+  .upload-area input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+
+  .upload-area img {
+    width: 100%; max-height: 180px;
+    object-fit: contain;
+    border-radius: 6px;
+    display: none;
+  }
+
+  .upload-area.has-image img { display: block; }
+  .upload-area.has-image .upload-placeholder { display: none; }
+
+  .upload-placeholder { pointer-events: none; }
+  .upload-icon { font-size: 28px; margin-bottom: 4px; }
+  .upload-text { font-size: 13px; color: var(--text-muted); }
+  .upload-sub { font-size: 11px; color: #555; margin-top: 4px; }
+
+  .remove-img {
+    position: absolute; top: 6px; right: 6px;
+    background: rgba(0,0,0,0.7); border: 1px solid var(--border);
+    color: var(--text-muted); border-radius: 4px;
+    padding: 2px 8px; font-size: 11px; cursor: pointer;
+    display: none; z-index: 5;
+    transition: color 0.2s;
+  }
+
+  .upload-area.has-image .remove-img { display: block; }
+  .remove-img:hover { color: var(--accent); }
+
+  /* Text inputs */
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+
+  input[type=text], textarea, select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    width: 100%;
+    transition: border-color 0.2s;
+    outline: none;
+    resize: vertical;
+  }
+
+  input[type=text]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #444;
+  }
+
+  /* Mode selector */
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .mode-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 10px 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  .mode-btn:hover { border-color: var(--accent); color: var(--text); }
+
+  .mode-btn.active {
+    background: rgba(255,77,0,0.12);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Generate button */
+  .gen-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    color: white;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gen-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(255,77,0,0.35);
+  }
+
+  .gen-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .gen-btn .spinner {
+    display: none;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  .gen-btn.loading .spinner { display: inline-block; }
+  .gen-btn.loading .btn-text::before { content: 'กำลังสร้าง...'; }
+  .gen-btn:not(.loading) .btn-text::before { content: 'GENERATE PROMPTS'; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Status bar */
+  .status-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    transition: all 0.3s;
+  }
+
+  .status-bar.ready { color: var(--success); border-color: rgba(0,210,106,0.3); background: rgba(0,210,106,0.05); }
+  .status-bar.error { color: #ff6b6b; border-color: rgba(255,107,107,0.3); background: rgba(255,107,107,0.05); }
+  .status-bar.thinking { color: var(--accent2); border-color: rgba(255,140,0,0.3); background: rgba(255,140,0,0.05); }
+
+  /* Output area */
+  .output-area {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .output-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 2px;
+  }
+
+  .clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .clear-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Welcome state */
+  .welcome-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .welcome-icon { font-size: 48px; opacity: 0.4; }
+  .welcome-title { font-size: 16px; font-weight: 600; opacity: 0.7; }
+  .welcome-sub { font-size: 13px; opacity: 0.4; }
+
+  /* Prompt cards */
+  .prompt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .prompt-card-header {
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .prompt-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .tag-image { color: #60b8ff; border-color: rgba(96,184,255,0.3); background: rgba(96,184,255,0.08); }
+  .tag-video { color: #c084fc; border-color: rgba(192,132,252,0.3); background: rgba(192,132,252,0.08); }
+  .tag-hook { color: var(--accent2); border-color: rgba(255,140,0,0.3); background: rgba(255,140,0,0.08); }
+  .tag-analyze { color: var(--success); border-color: rgba(0,210,106,0.3); background: rgba(0,210,106,0.08); }
+
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 4px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .copy-btn:hover { color: var(--text); border-color: #555; }
+  .copy-btn.copied { color: var(--success); border-color: rgba(0,210,106,0.4); }
+
+  .prompt-body {
+    padding: 16px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    color: #d0d0d0;
+    letter-spacing: 0.2px;
+  }
+
+  /* Loading skeleton */
+  .skeleton-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: fadeUp 0.4s ease forwards;
+    opacity: 0;
+  }
+
+  .skeleton-header {
+    padding: 12px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .skel {
+    background: linear-gradient(90deg, #222 25%, #2a2a2a 50%, #222 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .skel-tag { height: 22px; width: 100px; }
+  .skel-body { height: 16px; border-radius: 4px; }
+  .skel-body-wrap { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+  /* Divider */
+  .session-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+  }
+
+  .session-divider::before, .session-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    .output-area { min-height: 60vh; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">🏍</div>
+  <h1>MotoPrompt TH</h1>
+  <span class="version-tag">V3.6.2</span>
+</header>
+
+<div class="main">
+  <!-- Sidebar -->
+  <div class="sidebar">
+
+    <!-- Upload product image -->
+    <div class="input-group">
+      <div class="section-label">รูปสินค้า (Required)</div>
+      <div class="upload-area" id="uploadArea">
+        <input type="file" id="productImage" accept="image/*">
+        <button class="remove-img" id="removeImg" onclick="removeImage(event)">✕ ลบ</button>
+        <img id="previewImg" src="" alt="preview">
+        <div class="upload-placeholder">
+          <div class="upload-icon">📸</div>
+          <div class="upload-text">อัปโหลดรูปสินค้า</div>
+          <div class="upload-sub">JPG, PNG, WEBP · คลิกหรือลากไฟล์</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Motorcycle model -->
+    <div class="input-group">
+      <div class="section-label">รุ่นรถมอเตอร์ไซค์ (Required)</div>
+      <input type="text" id="motoModel" placeholder="เช่น Honda Click 160, Yamaha NMAX, PCX 160">
+    </div>
+
+    <!-- Product name (optional) -->
+    <div class="input-group">
+      <div class="section-label">ชื่อ/รายละเอียดสินค้า (Optional)</div>
+      <input type="text" id="productName" placeholder="เช่น ชิลด์หน้า CNC คาร์บอน, Tank Pad ลาย 3D">
+    </div>
+
+    <!-- Mode -->
+    <div class="input-group">
+      <div class="section-label">เลือก Mode</div>
+      <div class="mode-grid">
+        <button class="mode-btn" data-mode="IMAGE" onclick="selectMode(this)">IMAGE</button>
+        <button class="mode-btn" data-mode="VIDEO" onclick="selectMode(this)">VIDEO</button>
+        <button class="mode-btn active" data-mode="FULL" onclick="selectMode(this)">FULL</button>
+        <button class="mode-btn" data-mode="HOOK" onclick="selectMode(this)">HOOK</button>
+        <button class="mode-btn" data-mode="ANALYZE" onclick="selectMode(this)">ANALYZE</button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-bar" id="statusBar">MotoPrompt TH พร้อมแล้ว</div>
+
+    <!-- Generate -->
+    <button class="gen-btn" id="genBtn" onclick="generate()">
+      <span class="spinner"></span>
+      <span class="btn-text"></span>
+    </button>
+
+  </div>
+
+  <!-- Output area -->
+  <div class="output-area" id="outputArea">
+    <div class="welcome-state" id="welcomeState">
+      <div class="welcome-icon">🏍️</div>
+      <div class="welcome-title">MotoPrompt TH พร้อมแล้ว</div>
+      <div class="welcome-sub">อัปโหลดรูปสินค้า + รุ่นรถ + เลือก Mode แล้วกด Generate</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are MotoPrompt TH — an AI Prompt Generator specialized in creating prompts for AI IMAGE / VIDEO generation of Thai motorcycle accessories.
+
+ROLE: Generate PROMPTS only. Never generate images, video, captions, or rendered media. Output = plain text prompts only.
+
+CORE PHILOSOPHY — REALISM > CINEMATIC:
+Goal: Images and videos must look like a Thai motorcycle owner genuinely filmed it themselves. NOT showroom render, NOT ecommerce ad, NOT influencer commercial.
+
+REALISM PRIORITY ORDER (when conflicts arise):
+1. Product Accuracy
+2. Scale Accuracy
+3. Installation Accuracy
+4. Motorcycle Identity
+5. Vehicle Continuity
+6. Scene Continuity
+7. Audio Continuity
+8. Cinematic Appeal
+
+MODES:
+- IMAGE → Generate IMAGE_PROMPT_EP1 + IMAGE_PROMPT_EP2
+- VIDEO → Generate VIDEO_PROMPT_EP1 + VIDEO_PROMPT_EP2
+- FULL → Generate all four: IMAGE_PROMPT_EP1 + IMAGE_PROMPT_EP2 + VIDEO_PROMPT_EP1 + VIDEO_PROMPT_EP2
+- HOOK → Generate HOOK_PROMPT_ONLY
+- ANALYZE → Analyze product image and output ANALYSIS_ONLY
+
+KEY RULES:
+
+PRODUCT IDENTITY LOCK:
+- The uploaded image is immutable truth. Preserve exact shape, geometry, proportions, logo count, decals, texture, edge contour, install orientation. Never redesign or hallucinate new graphics.
+
+INSTALLATION STATE LOCK:
+- EP1: Product is NOT installed. Product displayed separately from motorcycle.
+- EP2: Product fully installed, mechanically attached. Never floating, never half-installed.
+
+MICRO ACCESSORY SCALE LOCK:
+- Tank pads, stickers, decals, rim tape, emblems must remain physically small relative to motorcycle. Never enlarge for visibility. Motorcycle must dominate frame.
+
+VEHICLE CONTINUITY LOCK:
+- Same motorcycle must appear in ALL scenes. Preserve paint hue, body panels, headlight shape, wheel design, seat profile.
+
+HUMAN GENERATION CONTROL:
+- Humans must NOT appear visually unless explicitly requested.
+- Voice/dialogue: prefer off-camera "A male Thai voice is heard naturally off-camera..." Never "The same Thai owner says..."
+
+SCENE CONTINUITY LOCK:
+- EP1 and EP2 must occur in the SAME physical garage environment. Same walls, floor, lighting, background objects.
+
+VIDEO PROMPT FORMAT:
+- Output as ONE continuous plain-text block. No bullet points, no labels, no markdown structure.
+
+TRUE SCALE LOCK:
+- Motorcycle must visually dominate frame. If uncertain about scale: UNDER-SCALE ONLY.
+
+PHYSICAL CONTACT LOCK:
+- Installed products must visibly touch motorcycle surface. Reject floating objects.
+
+OUTPUT FORMAT (respond in Thai language for section labels, but prompts themselves should be in English for AI tool compatibility):
+
+For each prompt, format as:
+[SECTION_NAME]
+[prompt text]
+
+Always respond in Thai for explanations/labels. Write the actual prompts in English for AI tool compatibility.`;
+
+let selectedMode = 'FULL';
+let imageBase64 = null;
+let imageMediaType = null;
+let sessionCount = 0;
+
+function selectMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedMode = btn.dataset.mode;
+}
+
+const uploadArea = document.getElementById('uploadArea');
+const previewImg = document.getElementById('previewImg');
+const productImageInput = document.getElementById('productImage');
+
+productImageInput.addEventListener('change', handleFile);
+
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('dragover');
+});
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processFile(file);
+});
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  imageMediaType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target.result;
+    imageBase64 = result.split(',')[1];
+    previewImg.src = result;
+    uploadArea.classList.add('has-image');
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  imageBase64 = null;
+  imageMediaType = null;
+  previewImg.src = '';
+  uploadArea.classList.remove('has-image');
+  productImageInput.value = '';
+}
+
+function setStatus(msg, type = '') {
+  const bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.className = 'status-bar' + (type ? ' ' + type : '');
+}
+
+function showSkeletons(count) {
+  const area = document.getElementById('outputArea');
+  document.getElementById('welcomeState')?.remove();
+  for (let i = 0; i < count; i++) {
+    const card = document.createElement('div');
+    card.className = 'skeleton-card';
+    card.style.animationDelay = (i * 0.08) + 's';
+    card.innerHTML = `
+      <div class="skeleton-header">
+        <div class="skel skel-tag"></div>
+      </div>
+      <div class="skel-body-wrap">
+        <div class="skel skel-body" style="width:90%"></div>
+        <div class="skel skel-body" style="width:75%"></div>
+        <div class="skel skel-body" style="width:85%"></div>
+        <div class="skel skel-body" style="width:60%"></div>
+        <div class="skel skel-body" style="width:80%"></div>
+      </div>`;
+    area.appendChild(card);
+  }
+}
+
+function clearSkeletons() {
+  document.querySelectorAll('.skeleton-card').forEach(el => el.remove());
+}
+
+function addDivider() {
+  const area = document.getElementById('outputArea');
+  document.getElementById('welcomeState')?.remove();
+  sessionCount++;
+  const div = document.createElement('div');
+  div.className = 'session-divider';
+  div.textContent = `SESSION ${sessionCount}`;
+  area.appendChild(div);
+}
+
+function renderPromptCards(text) {
+  clearSkeletons();
+  const area = document.getElementById('outputArea');
+
+  // Parse sections
+  const tagMap = {
+    'IMAGE_PROMPT_EP1': { label: 'IMAGE EP1', cls: 'tag-image' },
+    'IMAGE_PROMPT_EP2': { label: 'IMAGE EP2', cls: 'tag-image' },
+    'VIDEO_PROMPT_EP1': { label: 'VIDEO EP1', cls: 'tag-video' },
+    'VIDEO_PROMPT_EP2': { label: 'VIDEO EP2', cls: 'tag-video' },
+    'HOOK_PROMPT_ONLY': { label: 'HOOK', cls: 'tag-hook' },
+    'ANALYSIS_ONLY': { label: 'ANALYZE', cls: 'tag-analyze' },
+  };
+
+  let parsed = [];
+  const lines = text.split('\n');
+  let currentSection = null;
+  let currentContent = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const foundTag = Object.keys(tagMap).find(t => trimmed === t || trimmed.startsWith('[' + t + ']') || trimmed === '[' + t + ']');
+    const cleanTag = trimmed.replace(/[\[\]]/g, '');
+    const isTag = Object.keys(tagMap).includes(cleanTag);
+
+    if (isTag) {
+      if (currentSection) {
+        parsed.push({ section: currentSection, content: currentContent.join('\n').trim() });
+      }
+      currentSection = cleanTag;
+      currentContent = [];
+    } else {
+      if (currentSection) currentContent.push(line);
+    }
+  }
+  if (currentSection) {
+    parsed.push({ section: currentSection, content: currentContent.join('\n').trim() });
+  }
+
+  // If no sections found, render as single card
+  if (parsed.length === 0) {
+    parsed = [{ section: 'OUTPUT', content: text.trim() }];
+  }
+
+  parsed.forEach((item, idx) => {
+    const meta = tagMap[item.section] || { label: item.section, cls: 'tag-analyze' };
+    const card = document.createElement('div');
+    card.className = 'prompt-card';
+    card.style.animationDelay = (idx * 0.1) + 's';
+
+    const id = 'card_' + Date.now() + '_' + idx;
+    card.innerHTML = `
+      <div class="prompt-card-header">
+        <span class="prompt-tag ${meta.cls}">${meta.label}</span>
+        <button class="copy-btn" id="${id}" onclick="copyCard('${id}', this)">Copy</button>
+      </div>
+      <div class="prompt-body" id="body_${id}">${escapeHtml(item.content)}</div>`;
+
+    area.appendChild(card);
+  });
+
+  area.scrollTop = area.scrollHeight;
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyCard(id, btn) {
+  const body = document.getElementById('body_' + id);
+  navigator.clipboard.writeText(body.innerText).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+async function generate() {
+  const motoModel = document.getElementById('motoModel').value.trim();
+  const productName = document.getElementById('productName').value.trim();
+
+  // Validation
+  if (!imageBase64) {
+    setStatus('⚠️ กรุณาอัปโหลดรูปสินค้าก่อน', 'error');
+    return;
+  }
+  if (!motoModel) {
+    setStatus('⚠️ กรุณาระบุรุ่นรถมอเตอร์ไซค์', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.classList.add('loading');
+
+  setStatus('⏳ กำลัง generate...', 'thinking');
+
+  // Show skeletons
+  addDivider();
+  const skeletonCount = selectedMode === 'FULL' ? 4 : selectedMode === 'IMAGE' || selectedMode === 'VIDEO' ? 2 : 1;
+  showSkeletons(skeletonCount);
+
+  const userPrompt = `สร้าง prompt สำหรับ Mode: ${selectedMode}
+
+รุ่นรถ: ${motoModel}
+${productName ? 'สินค้า: ' + productName : ''}
+
+วิเคราะห์รูปสินค้าที่แนบมาและสร้าง prompt ตาม mode ที่เลือก`;
+
+  try {
+    const messages = [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: imageMediaType,
+              data: imageBase64
+            }
+          },
+          {
+            type: 'text',
+            text: userPrompt
+          }
+        ]
+      }
+    ];
+
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: SYSTEM_PROMPT,
+        messages: messages
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error.message || 'API Error');
+    }
+
+    const resultText = data.content.map(c => c.text || '').join('\n');
+    renderPromptCards(resultText);
+    setStatus('✓ สร้าง prompt เรียบร้อยแล้ว', 'ready');
+
+  } catch (err) {
+    clearSkeletons();
+    setStatus('❌ เกิดข้อผิดพลาด: ' + err.message, 'error');
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generate();
+});
+</script>
+</body>
+  </html>
